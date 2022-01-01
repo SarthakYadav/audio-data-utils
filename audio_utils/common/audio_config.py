@@ -27,7 +27,7 @@ class AudioConfig(object):
         # now validate attributes
         if self.features == Features.LOGMEL:
             for k in ["n_fft", "win_len", "hop_len", "n_mels", "fmin", "fmax"]:
-                assert hasattr(self, k)
+                assert hasattr(self, k), "{} not found".format(k)
         # other necessary attributes
         if self.cropped_read:
             self.num_frames = int(audio_config.get("random_clip_size", 2.5) * self.sr)
