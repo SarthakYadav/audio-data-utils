@@ -12,12 +12,15 @@ class BasePackedDataset(BaseAudioDataset):
                  audio_config: AudioConfig,
                  mode: Union[str, TrainingMode] = TrainingMode.MULTICLASS,
                  mixer=None, transform=None, is_val=False,
+                 pre_feature_transforms=None,
+                 post_feature_transforms=None,
                  gcs_bucket_path=None,
                  labels_delimiter=","
                  ):
         super(BasePackedDataset, self).__init__(manifest_path=manifest_path, labels_map=labels_map,
                                                 audio_config=audio_config, mode=mode,
-                                                mixer=mixer, transform=transform, is_val=is_val,
+                                                mixer=mixer, pre_feature_transforms=pre_feature_transforms,
+                                                post_feature_transforms=post_feature_transforms, is_val=is_val,
                                                 labels_delimiter=labels_delimiter)
         self.gcs_bucket_path = gcs_bucket_path
         if self.gcs_bucket_path:

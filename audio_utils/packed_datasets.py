@@ -19,9 +19,17 @@ class PackedDataset(BasePackedDataset):
                                         frames_to_read=self.audio_config.num_frames,
                                         audio_size=dur)
         real, _ = self.__get_feature__(preprocessed_audio)
+        if self.pre_feature_transforms:
+            real = self.pre_feature_transforms(real)
+            # print("after pre_feature_transforms:", real.shape)
+        if self.post_feature_transforms:
+            real = self.post_feature_transforms(real)
+            real = real.squeeze(0)
+            # print("after post_feature_transforms:", real.shape)
         label_tensor = self.__parse_labels__(lbls)
-        if self.transform is not None:
-            real = self.transform(real)
+        # print("after pre_feature_transforms:", real.shape)
+        # if self.transform is not None:
+        #     real = self.transform(real)
         return real, label_tensor
 
     def __getitem__(self, item):
@@ -38,12 +46,15 @@ class PackedDataset(BasePackedDataset):
         for idx in idxs:
             record = block[idx]
             real, label = self.__get_item_helper__(record)
-            if self.mixer is not None:
-                real, final_label = self.mixer(self, real, label)
-                if self.mode != "multiclass":
-                    label = final_label
+            # if self.mixer is not None:
+            #     real, final_label = self.mixer(self, real, label)
+            #     if self.mode != "multiclass":
+            #         label = final_label
             batch_tensors.append(real)
             batch_labels.append(label)
+
+        # apply transforms here if needed
+
         return batch_tensors, batch_labels
 
 

@@ -6,11 +6,16 @@ from audio_utils.common.utilities import _check_transform_input
 
 
 class BaseAudioParser(object):
-    def __init__(self):
+    def __init__(self, mode="after_batch"):
         super().__init__()
+        assert mode in ['after_batch', "per_instance"]
+        if mode == "after_batch":
+            self.desired_dims = 3
+        else:
+            self.desired_dims = 2
 
     def check_sample(self, audio_sample):
-        return _check_transform_input(audio_sample)
+        return _check_transform_input(audio_sample, desired_dims=self.desired_dims)
 
     def __call__(self, audio):
         raise NotImplementedError("Abstract method called")
@@ -24,8 +29,9 @@ class SpectrogramParser(BaseAudioParser):
                  center=True,
                  window_fn=torch.hann_window,
                  pad=0,
-                 pad_mode="reflect"):
-        super(SpectrogramParser, self).__init__()
+                 pad_mode="reflect",
+                 mode="after_batch"):
+        super(SpectrogramParser, self).__init__(mode)
         self.n_fft = n_fft
         self.hop_length = hop_length
         self.window_length = window_length
@@ -70,12 +76,14 @@ class SpectrogramPostProcess:
                  window_fn=torch.hann_window,
                  power=2,
                  normalize=True,
-                 log_compress=True):
+                 log_compress=True,
+                 mode="after_batch"):
         super(SpectrogramPostProcess, self).__init__()
         self.power = power
         self.normalize = normalize
         self.window = window_fn(window_length)
         self.log_compress = log_compress
+        self.mode = mode
         if log_compress:
             print("log_compression is set to True in SpectrogramPostProcess. If using MelScale down the line, disable it")
 
@@ -95,30 +103,32 @@ class SpectrogramPostProcess:
         if self.log_compress:
             batch = torch.clamp(batch, min=1e-8, max=1e8)
             batch = torch.log(batch)
+        if self.mode == "per_instance":
+            batch = batch.squeeze(0)
         return batch
 
 
 class ToMelScale(BaseAudioParser):
     def __init__(self,
                  sample_rate=16000,
-                 window_length=400,
+                 # window_length=400,
                  hop_length=160,
                  n_fft=1024,
                  n_mels=64,
                  fmin=60.0,
                  fmax=7800.0,
                  norm=None,
-                 center=True,
+                 # center=True,
                  mel_scale="htk"):
         super(ToMelScale, self).__init__()
         self.sample_rate = sample_rate
-        self.window_length = window_length
+        # self.window_length = window_length
         self.hop_length = hop_length
         self.n_fft = n_fft
         self.n_mels = n_mels
         self.fmin = fmin
         self.fmax = fmax
-        self.center = center
+        # self.center = center
         self.mel_scale = torchaudio.transforms.MelScale(
             self.n_mels,
             self.sample_rate,

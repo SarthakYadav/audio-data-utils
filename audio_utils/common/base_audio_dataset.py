@@ -6,7 +6,7 @@ from typing import Union
 from torch.utils.data import Dataset
 from audio_utils.common.utilities import Features, TrainingMode
 from audio_utils.common.audio_config import AudioConfig
-from audio_utils.common.feature_transforms import LogMelSpecParser, RawAudioParser
+from audio_utils.common.feature_transforms import RawAudioParser
 
 
 class BaseAudioDataset(Dataset):
@@ -15,14 +15,17 @@ class BaseAudioDataset(Dataset):
                  labels_map: str,
                  audio_config: AudioConfig,
                  mode: Union[str, TrainingMode] = TrainingMode.MULTICLASS,
-                 mixer=None, transform=None, is_val=False,
+                 mixer=None, pre_feature_transforms=None,
+                 post_feature_transforms=None,
+                 is_val=False,
                  labels_delimiter=","):
         super(BaseAudioDataset, self).__init__()
         assert os.path.isfile(labels_map)
         assert os.path.splitext(labels_map)[-1] == ".json"
         assert audio_config is not None
         self.is_val = is_val
-        self.transform = transform
+        self.pre_feature_transforms = pre_feature_transforms
+        self.post_feature_transforms = post_feature_transforms
         self.mixer = mixer
         if type(mode == "str"):
             self.mode = TrainingMode(mode)
@@ -39,24 +42,25 @@ class BaseAudioDataset(Dataset):
         self.files = files
         self.length = len(self.files)
 
-        if self.audio_config.features == Features.RAW:
-            self.audio_parser = RawAudioParser(normalize_waveform=self.audio_config.normalize)
-        elif self.audio_config.features == Features.LOGMEL:
-            self.audio_parser = LogMelSpecParser(
-                sample_rate=self.audio_config.sr,
-                frame_length=self.audio_config.win_len,
-                frame_step=self.audio_config.hop_len,
-                n_fft=self.audio_config.n_fft,
-                n_mels=self.audio_config.n_mels,
-                normalize=self.audio_config.normalize,
-                fmin=self.audio_config.fmin,
-                fmax=self.audio_config.fmax
-            )
-        else:
-            raise ValueError("In valid feature type {} requested. Supported are ['raw', 'log_mel']")
+        self.raw_waveform_parser = RawAudioParser(normalize_waveform=self.audio_config.normalize)
+        # if self.audio_config.features == Features.RAW:
+        #     self.audio_parser =
+        # elif self.audio_config.features == Features.LOGMEL:
+        #     self.audio_parser = LogMelSpecParser(
+        #         sample_rate=self.audio_config.sr,
+        #         frame_length=self.audio_config.win_len,
+        #         frame_step=self.audio_config.hop_len,
+        #         n_fft=self.audio_config.n_fft,
+        #         n_mels=self.audio_config.n_mels,
+        #         normalize=self.audio_config.normalize,
+        #         fmin=self.audio_config.fmin,
+        #         fmax=self.audio_config.fmax
+        #     )
+        # else:
+        #     raise ValueError("In valid feature type {} requested. Supported are ['raw', 'log_mel']")
 
     def __get_feature__(self, audio):
-        return self.audio_parser(audio)
+        return self.raw_waveform_parser(audio)
 
     def __get_item_helper__(self, record):
         raise NotImplementedError("Abstract method called")

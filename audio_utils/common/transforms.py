@@ -56,8 +56,18 @@ class RandomCrop:
         self.size = size
 
     def __call__(self, signal):
-        start = random.randint(0, signal.shape[1] - self.size - 1)
-        return signal[:, start: start + self.size]
+        dim = signal.dim()
+        if dim == 2:
+            if signal.shape[1] <= self.size:
+                return signal
+            start = random.randint(0, signal.shape[1] - self.size - 1)
+            output = signal[:, start: start + self.size]
+        if dim == 3:
+            if signal.shape[2] <= self.size:
+                return signal
+            start = random.randint(0, signal.shape[2] - self.size - 1)
+            output = signal[:, :, start: start + self.size]
+        return output
 
 
 class CenterCrop:
@@ -65,12 +75,19 @@ class CenterCrop:
         self.size = size
 
     def __call__(self, signal):
-
-        if signal.shape[1] > self.size:
-            start = (signal.shape[1] - self.size) // 2
-            return signal[:, start: start + self.size]
-        else:
-            return signal
+        dim = signal.dim()
+        if dim == 2:
+            if signal.shape[1] > self.size:
+                start = (signal.shape[1] - self.size) // 2
+                return signal[:, start: start + self.size]
+            else:
+                return signal
+        if dim == 3:
+            if signal.shape[2] > self.size:
+                start = (signal.shape[2] - self.size) // 2
+                return signal[:, :, start: start + self.size]
+            else:
+                return signal
 
 
 class PadToSize:
@@ -80,17 +97,31 @@ class PadToSize:
         self.mode = mode
 
     def __call__(self, signal):
-        if signal.shape[1] < self.size:
-            padding = self.size - signal.shape[1]
-            offset = padding // 2
-            pad_width = ((0, 0), (offset, padding - offset))
-            if self.mode == 'constant':
-                signal = torch.nn.functional.pad(signal, pad_width[1], "constant", value=signal.min())
-            else:
-                try:
-                    signal = torch.nn.functional.pad(signal, pad_width[1], "replicate")
-                except NotImplementedError as ex:
-                    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! signal.shape", signal.shape, self.size)
+        dim = signal.dim()
+        if dim == 2:
+            if signal.shape[1] < self.size:
+                padding = self.size - signal.shape[1]
+                offset = padding // 2
+                pad_width = ((0, 0), (offset, padding - offset))
+                if self.mode == 'constant':
+                    signal = torch.nn.functional.pad(signal, pad_width[1], "constant", value=signal.min())
+                else:
+                    try:
+                        signal = torch.nn.functional.pad(signal, pad_width[1], "replicate")
+                    except NotImplementedError as ex:
+                        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! signal.shape", signal.shape, self.size)
+        elif dim == 3:
+            if signal.shape[2] < self.size:
+                padding = self.size - signal.shape[1]
+                offset = padding // 2
+                pad_width = ((0, 0), (offset, padding - offset))
+                if self.mode == 'constant':
+                    signal = torch.nn.functional.pad(signal, pad_width[1], "constant", value=signal.min())
+                else:
+                    try:
+                        signal = torch.nn.functional.pad(signal, pad_width[1], "replicate")
+                    except NotImplementedError as ex:
+                        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! signal.shape", signal.shape, self.size)
         return signal
 
 
@@ -105,36 +136,31 @@ class ClipValue:
         return x
 
 
-def _check_torch_audiomentation_inputs(x):
-    input_dim = x.dim()
-    if input_dim == 2:
-        spec = x.unsqueeze(1)
-    elif input_dim == 1:
-        spec = x.unsqueeze(0).unsqueeze(0)
-    return spec
-
-
-def _post_torch_audiomentation(x, orig_input_dim):
-    if orig_input_dim == 2:
-        x = x.squeeze(1)
-    elif orig_input_dim == 1:
-        x = x.squeeze()
-    return x
-
-
 class TorchAudiomentationTransform:
     def __init__(self, transform):
         super(TorchAudiomentationTransform, self).__init__()
         self.transform = transform
 
-    def apply_transform(self, x):
-        return self.transform(x)
+    def _check_torch_audiomentation_inputs(self, x):
+        input_dim = x.dim()
+        if input_dim == 2:
+            spec = x.unsqueeze(1)
+        elif input_dim == 1:
+            spec = x.unsqueeze(0).unsqueeze(0)
+        return spec
+
+    def _post_torch_audiomentation(self, x, orig_input_dim):
+        if orig_input_dim == 2:
+            x = x.squeeze(1)
+        elif orig_input_dim == 1:
+            x = x.squeeze()
+        return x
 
     def __call__(self, x):
         input_dim = x.dim()
-        spec = _check_torch_audiomentation_inputs(x)
-        spec = self.apply_transform(spec)
-        spec = _post_torch_audiomentation(spec, input_dim)
+        spec = self._check_torch_audiomentation_inputs(x)
+        spec = self.transform(spec)
+        spec = self._post_torch_audiomentation(spec, input_dim)
         return spec
 
 
@@ -234,3 +260,14 @@ class FreqTimeMasking:
         for ix in range(num_time_masks):
             batch = torchaudio.functional.mask_along_axis(batch, self.time_mask_param, mask_value, self.time_axis)
         return batch
+
+
+BATCHED_TRANSFORMS = {
+    "random_gain": RandomGain,
+    "peak_norm": PeakNormalization,
+    "gaussian_noise": AddGaussianNoise,
+}
+
+RAW_WAVEFORM_TRANSFORMS = {
+    "pad_to_size": PadToSize
+}
