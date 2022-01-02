@@ -172,3 +172,13 @@ class TrainingMode(enum.Enum):
     MULTICLASS = "multiclass"
     MULTILABEL = "multilabel"
     CONTRASTIVE = "contrastive"
+
+
+def _check_transform_input(audio_sample, desired_dims=2):
+    if isinstance(audio_sample, np.ndarray):
+        audio_sample = torch.from_numpy(audio_sample.astype("float32")).float()
+    if audio_sample.dim() == 1:
+        audio_sample = audio_sample.reshape(1, -1)
+    if audio_sample.dim() != desired_dims:
+        raise ValueError("An array/tensor of shape (batch, T) or (1, T) is needed")
+    return audio_sample

@@ -6,7 +6,7 @@ from typing import Union
 from torch.utils.data import Dataset
 from audio_utils.common.utilities import Features, TrainingMode
 from audio_utils.common.audio_config import AudioConfig
-from audio_utils.common.audio_parser import LogMelSpecParser, RawAudioParser
+from audio_utils.common.feature_transforms import LogMelSpecParser, RawAudioParser
 
 
 class BaseAudioDataset(Dataset):
