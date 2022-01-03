@@ -162,7 +162,7 @@ def load_audio(f, sr, min_duration: float = 5.,
 class Features(enum.Enum):
     """Look up for similarity measure in contrastive model."""
     RAW = "raw"
-    TORCHSPECGRAM = "torch_spectrogram"
+    SPECTROGRAM = "spectrogram"
     LOGMEL = "log_mel"
 
 

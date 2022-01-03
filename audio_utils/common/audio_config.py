@@ -13,11 +13,14 @@ class AudioConfig(object):
     def parse_from_config(self, audio_config):
         self.sr = int(audio_config.get("sample_rate", 16000))
         self.normalize = bool(audio_config.get("normalize", False))
+        # TODO: make normalize into 2 parameters
+        # 1. normalize_waveform: for input norm
+        # 2. normalize_features: for melspec/spec normalization argument
         self.min_duration = float(audio_config.get("min_duration", 2.5))
         self.background_noise_path = audio_config.get("background_noise_path", None)
         self.features = Features(audio_config.get("features", "raw"))
         self.view_size = int(audio_config.get("random_clip_size", 2.5) * self.sr)
-        self.cropped_read = bool(audio_config.get("cropped_read", False))
+        self.cropped_read = bool(audio_config.get("cropped_read", True))
 
         for key in audio_config:
             if hasattr(self, key):
@@ -27,6 +30,9 @@ class AudioConfig(object):
         # now validate attributes
         if self.features == Features.LOGMEL:
             for k in ["n_fft", "win_len", "hop_len", "n_mels", "fmin", "fmax"]:
+                assert hasattr(self, k), "{} not found".format(k)
+        if self.features == Features.SPECTROGRAM:
+            for k in ["n_fft", "win_len", "hop_len"]:
                 assert hasattr(self, k), "{} not found".format(k)
         # other necessary attributes
         if self.cropped_read:

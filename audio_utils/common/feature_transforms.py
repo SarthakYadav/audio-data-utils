@@ -69,6 +69,10 @@ class SpectrogramParser(BaseAudioParser):
         )
         return batch
 
+# TODO: Add a simple `mel_spec_override` flag
+# that automatically only applies arguments
+# conducive to melspec behaviour
+
 
 class SpectrogramPostProcess:
     def __init__(self,
