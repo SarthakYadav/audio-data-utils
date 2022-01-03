@@ -9,7 +9,7 @@ class PackedDataset(BasePackedDataset):
 
     def __get_item_helper__(self, record):
         lbls = record['label']
-        if self.audio_config.cropped_read and not self.is_val:
+        if self.audio_config.cropped_read:
             dur = record['duration']
         else:
             dur = None
