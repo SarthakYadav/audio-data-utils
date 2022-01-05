@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="audio-data-utils",
-    version="0.0.1",
+    version="0.0.2",
     author='Sarthak Yadav',
     description="Audio data loading utils for personal research",
     long_description=long_description,
