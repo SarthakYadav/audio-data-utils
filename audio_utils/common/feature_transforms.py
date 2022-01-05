@@ -69,25 +69,26 @@ class SpectrogramParser(BaseAudioParser):
         )
         return batch
 
-# TODO: Add a simple `mel_spec_override` flag
-# that automatically only applies arguments
-# conducive to melspec behaviour
-
 
 class SpectrogramPostProcess:
     def __init__(self,
                  window_length=400,
                  window_fn=torch.hann_window,
                  power=2,
-                 normalize=True,
+                 normalize=False,
                  log_compress=True,
-                 mode="after_batch"):
+                 mode="after_batch",
+                 mel_spec_override=False):
         super(SpectrogramPostProcess, self).__init__()
         self.power = power
         self.normalize = normalize
         self.window = window_fn(window_length)
         self.log_compress = log_compress
         self.mode = mode
+        if mel_spec_override:
+            self.log_compress = False
+            print("mel_spec_override flag is set, forcing log_compress to false")
+
         if log_compress:
             print("log_compression is set to True in SpectrogramPostProcess. If using MelScale down the line, disable it")
 

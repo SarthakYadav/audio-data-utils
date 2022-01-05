@@ -51,11 +51,39 @@ class WaveformTransforms:
         raise NotImplementedError()
 
 
-class RandomCrop:
+class Cropper:
     def __init__(self, size):
         self.size = size
 
+    def get_crop_parameters(self, signal):
+        raise NotImplementedError("Abstract method. Override this in your Cropped class")
+
+    def crop_signal(self, signal, dim, start_idx):
+        assert signal.dim() == dim
+        # start_idx, dim = self.get_crop_parameters(signal)
+        if dim == 2:
+            return signal[:, start_idx:start_idx + self.size]
+        elif dim == 3:
+            return signal[:, :, start_idx:start_idx + self.size]
+        else:
+            raise ValueError("Received signal has a .dim() of {}, only values 2,3 supported")
+
     def __call__(self, signal):
+        raise NotImplementedError("Abstract class method called.")
+
+
+class RandomCrop(Cropper):
+    def __init__(self, size):
+        super(RandomCrop, self).__init__(size)
+
+    def get_crop_parameters(self, signal):
+        dim = signal.dim()
+        if signal.shape[dim - 1] <= self.size:
+            return 0, dim
+        else:
+            return random.randint(0, signal.shape[dim - 1] - self.size - 1), dim
+
+    def __call_old__(self, signal):
         dim = signal.dim()
         if dim == 2:
             if signal.shape[1] <= self.size:
@@ -69,12 +97,53 @@ class RandomCrop:
             output = signal[:, :, start: start + self.size]
         return output
 
+    def __call__(self, signal):
+        start_idx, dim = self.get_crop_parameters(signal)
+        return self.crop_signal(signal, dim, start_idx)
 
-class CenterCrop:
-    def __init__(self, size):
-        self.size = size
+
+class NonOverlappingRandomCrop(Cropper):
+    def __init__(self, size, sample_rate, min_separation_ms=250):
+        """
+        min_separation_ms: min separation in milliseconds
+                between starting point of the second crop after the end of the first
+                acceptable values in range [10, 500]
+        """
+
+        assert min_separation_ms >= 10 and min_separation_ms <= 500
+        super(NonOverlappingRandomCrop, self).__init__(size)
+        self.min_separation = int(sample_rate * (min_separation_ms/1000))
+
+    def get_crop_parameters(self, signal):
+        dim = signal.dim()
+
+        mid = int(signal.shape[dim-1] / 2)
+        idx1 = random.randint(0, mid - self.size)
+        idx2 = random.randint(idx1 + self.size + self.min_separation, signal.shape[dim-1] - self.size)
+        choice = np.random.binomial(1, 0.5)
+        if choice == 0:
+            return idx1, idx2, dim
+        else:
+            return idx2, idx1, dim
 
     def __call__(self, signal):
+        idx1, idx2, dim = self.get_crop_parameters(signal)
+        return self.crop_signal(signal, dim, idx1), self.crop_signal(signal, dim, idx2)
+
+
+class CenterCrop(Cropper):
+    def __init__(self, size):
+        super(CenterCrop, self).__init__(size)
+
+    def get_crop_parameters(self, signal):
+        dim = signal.dim()
+        if signal.shape[dim - 1] <= self.size:
+            return 0, dim
+        else:
+            start = (signal.shape[dim-1] - self.size) // 2
+            return start, dim
+
+    def __call_old__(self, signal):
         dim = signal.dim()
         if dim == 2:
             if signal.shape[1] > self.size:
@@ -88,6 +157,10 @@ class CenterCrop:
                 return signal[:, :, start: start + self.size]
             else:
                 return signal
+
+    def __call__(self, signal):
+        start, dim = self.get_crop_parameters(signal)
+        return self.crop_signal(signal, dim=dim, start_idx=start)
 
 
 class PadToSize:

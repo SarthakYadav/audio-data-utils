@@ -72,25 +72,21 @@ def _collate_fn_contrastive(batch):
     max_seqlength = longest_sample.size(1)
     batch_xi = torch.zeros(minibatch_size, channel_size, max_seqlength)
     batch_xj = torch.zeros(minibatch_size, channel_size, max_seqlength)
-    targets = torch.LongTensor(minibatch_size)
-    targets_supervised = []
+    targets = torch.arange(minibatch_size).long()
     for ix in range(minibatch_size):
         sample = batch[ix]
         x_i = sample[0]
         x_j = sample[1]
-        target = sample[2]
-        supervised_target = sample[3]
         seq_length_i = x_i.size(1)
         seq_length_j = x_j.size(1)
         batch_xi[ix].narrow(1, 0, seq_length_i).copy_(x_i)
         batch_xj[ix].narrow(1, 0, seq_length_j).copy_(x_j)
-        # print("[_collate]:", x_i.shape)
-        # print("[_collate]:", x_j.shape)
-        # print("[_collate]:", target)
-        targets[ix] = target
-        targets_supervised.append(supervised_target.unsqueeze(0))
-    targets_supervised = torch.cat(targets_supervised)
-    return batch_xi, batch_xj, targets, targets_supervised
+
+    if channel_size != 1:
+        # assume it's not raw waveform signal
+        batch_xi = batch_xi.unsqueeze(1)
+        batch_xj = batch_xj.unsqueeze(1)
+    return batch_xi, batch_xj, targets
 
 
 def readfile(f):
@@ -182,3 +178,12 @@ def _check_transform_input(audio_sample, desired_dims=2):
     if audio_sample.dim() != desired_dims:
         raise ValueError("An array/tensor of shape (batch, T) or (1, T) is needed")
     return audio_sample
+
+
+@enum.unique
+class ConstrastiveCroppingType(enum.Enum):
+    """Look up for similarity measure in contrastive model."""
+    PLAIN = "plain"
+    NO_OVERLAP = "no_overlap"
+
+

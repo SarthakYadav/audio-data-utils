@@ -79,11 +79,11 @@ if __name__ == '__main__':
     if args.post_batch:
         dset = PackedDataset(manifest_path=tr, labels_map=lbl_map, audio_config=audio_config,
                              mode="multilabel", labels_delimiter=";", pre_feature_transforms=pre_features,
-                             post_feature_transforms=None, gcs_bucket_path=os.environ.get("GCS_BUCKET_PATH",None))
+                             post_feature_transforms=None, gcs_bucket_path=os.environ.get("GCS_BUCKET_PATH", None))
     else:
         dset = PackedDataset(manifest_path=tr, labels_map=lbl_map, audio_config=audio_config,
                              mode="multilabel", labels_delimiter=";", pre_feature_transforms=pre_features,
-                             post_feature_transforms=post_feature, gcs_bucket_path=os.environ.get("GCS_BUCKET_PATH",None))
+                             post_feature_transforms=post_feature, gcs_bucket_path=os.environ.get("GCS_BUCKET_PATH", None))
 
     loader = DataLoader(dset, batch_size=bsize, shuffle=True, num_workers=8, collate_fn=packed_collate_fn_multilabel)
     lf = len(loader)

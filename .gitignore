@@ -11,6 +11,7 @@ __pycache__/
 
 # training and logs
 wandb/
+test*/
 
 
 # Distribution / packaging

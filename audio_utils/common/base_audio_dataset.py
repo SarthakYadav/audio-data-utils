@@ -27,9 +27,12 @@ class BaseAudioDataset(Dataset):
         self.pre_feature_transforms = pre_feature_transforms
         self.post_feature_transforms = post_feature_transforms
         self.mixer = mixer
-        if type(mode == "str"):
+        print("in BaseAudioDataset, mode is:", mode)
+        if type(mode) == str:
+            print("is str")
             self.mode = TrainingMode(mode)
         else:
+            print("is something else")
             self.mode = mode
         self.manifest_path = manifest_path
         with open(labels_map, 'r') as fd:
@@ -42,24 +45,9 @@ class BaseAudioDataset(Dataset):
         self.files = files
         self.length = len(self.files)
 
-        self.raw_waveform_parser = RawAudioParser(normalize_waveform=self.audio_config.normalize)
-        # if self.audio_config.features == Features.RAW:
-        #     self.audio_parser =
-        # elif self.audio_config.features == Features.LOGMEL:
-        #     self.audio_parser = LogMelSpecParser(
-        #         sample_rate=self.audio_config.sr,
-        #         frame_length=self.audio_config.win_len,
-        #         frame_step=self.audio_config.hop_len,
-        #         n_fft=self.audio_config.n_fft,
-        #         n_mels=self.audio_config.n_mels,
-        #         normalize=self.audio_config.normalize,
-        #         fmin=self.audio_config.fmin,
-        #         fmax=self.audio_config.fmax
-        #     )
-        # else:
-        #     raise ValueError("In valid feature type {} requested. Supported are ['raw', 'log_mel']")
+        self.raw_waveform_parser = RawAudioParser(normalize_waveform=self.audio_config.normalize_waveform)
 
-    def __get_feature__(self, audio):
+    def __get_waveform__(self, audio):
         return self.raw_waveform_parser(audio)
 
     def __get_item_helper__(self, record):

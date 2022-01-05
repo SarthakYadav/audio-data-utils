@@ -12,10 +12,8 @@ class AudioConfig(object):
 
     def parse_from_config(self, audio_config):
         self.sr = int(audio_config.get("sample_rate", 16000))
-        self.normalize = bool(audio_config.get("normalize", False))
-        # TODO: make normalize into 2 parameters
-        # 1. normalize_waveform: for input norm
-        # 2. normalize_features: for melspec/spec normalization argument
+        self.normalize_waveform = bool(audio_config.get("normalize_waveform", False))
+        self.normalize_features = bool(audio_config.get("normalize_features", False))
         self.min_duration = float(audio_config.get("min_duration", 2.5))
         self.background_noise_path = audio_config.get("background_noise_path", None)
         self.features = Features(audio_config.get("features", "raw"))
