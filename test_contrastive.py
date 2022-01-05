@@ -101,14 +101,16 @@ if __name__ == '__main__':
             ]
         )
     if args.post_batch:
-        dset = PackedContrastiveDataset(manifest_path=tr, labels_map=lbl_map,
+        dset = PackedContrastiveDataset(manifest_path=tr, labels_map=None,
                                         audio_config=audio_config,
+                                        mode="contrastive",
                                         pre_feature_transforms=pre_features,
                                         post_feature_transforms=None,
                                         random_cropping_strategy="plain",
                                         gcs_bucket_path=os.environ.get("GCS_BUCKET_PATH", None))
     else:
-        dset = PackedContrastiveDataset(manifest_path=tr, labels_map=lbl_map,
+        dset = PackedContrastiveDataset(manifest_path=tr, labels_map=None,
+                                        mode="contrastive",
                                         audio_config=audio_config,
                                         pre_feature_transforms=pre_features,
                                         post_feature_transforms=post_feature,

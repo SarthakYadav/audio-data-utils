@@ -8,10 +8,10 @@ from audio_utils.common.audio_config import AudioConfig
 class BasePackedDataset(BaseAudioDataset):
     def __init__(self,
                  manifest_path: str,
-                 labels_map: str,
                  audio_config: AudioConfig,
+                 labels_map: str = None,
                  mode: Union[str, TrainingMode] = TrainingMode.MULTICLASS,
-                 mixer=None, transform=None, is_val=False,
+                 mixer=None, is_val=False,
                  pre_feature_transforms=None,
                  post_feature_transforms=None,
                  gcs_bucket_path=None,

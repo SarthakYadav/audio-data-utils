@@ -20,23 +20,21 @@ class BaseAudioDataset(Dataset):
                  is_val=False,
                  labels_delimiter=","):
         super(BaseAudioDataset, self).__init__()
-        assert os.path.isfile(labels_map)
-        assert os.path.splitext(labels_map)[-1] == ".json"
         assert audio_config is not None
         self.is_val = is_val
         self.pre_feature_transforms = pre_feature_transforms
         self.post_feature_transforms = post_feature_transforms
         self.mixer = mixer
-        print("in BaseAudioDataset, mode is:", mode)
         if type(mode) == str:
-            print("is str")
             self.mode = TrainingMode(mode)
         else:
-            print("is something else")
             self.mode = mode
+        if self.mode == TrainingMode.MULTICLASS or self.mode == TrainingMode.MULTILABEL:
+            assert os.path.isfile(labels_map)
+            assert os.path.splitext(labels_map)[-1] == ".json"
+            with open(labels_map, 'r') as fd:
+                self.labels_map = json.load(fd)
         self.manifest_path = manifest_path
-        with open(labels_map, 'r') as fd:
-            self.labels_map = json.load(fd)
         self.audio_config = audio_config
         self.labels_delimiter = labels_delimiter
 
