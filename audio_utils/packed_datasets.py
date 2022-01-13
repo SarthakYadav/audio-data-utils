@@ -2,7 +2,7 @@ import numpy as np
 from audio_utils.common.transforms import NonOverlappingRandomCrop, RandomCrop
 from audio_utils.common.base_packed_dataset import BasePackedDataset
 from audio_utils.common.utilities import load_audio, _collate_fn_multilabel, _collate_fn_multiclass, _collate_fn_contrastive
-from audio_utils.common.utilities import ConstrastiveCroppingType
+from audio_utils.common.utilities import ConstrastiveCroppingType, Features
 
 
 class PackedDataset(BasePackedDataset):
@@ -28,7 +28,8 @@ class PackedDataset(BasePackedDataset):
             # print("after pre_feature_transforms:", real.shape)
         if self.post_feature_transforms:
             real = self.post_feature_transforms(real)
-            real = real.squeeze(0)
+            if self.audio_config.features != Features.RAW:
+                real = real.squeeze(0)
             # print("after post_feature_transforms:", real.shape)
         label_tensor = self.__parse_labels__(lbls)
         # print("after pre_feature_transforms:", real.shape)
@@ -128,8 +129,9 @@ class PackedContrastiveDataset(BasePackedDataset):
         if self.post_feature_transforms:
             x_i = self.post_feature_transforms(x_i)
             x_j = self.post_feature_transforms(x_j)
-            x_i = x_i.squeeze(0)
-            x_j = x_j.squeeze(0)
+            if self.audio_config.features != Features.RAW:
+                x_i = x_i.squeeze(0)
+                x_j = x_j.squeeze(0)
         return x_i, x_j
 
     def __getitem__(self, item):
