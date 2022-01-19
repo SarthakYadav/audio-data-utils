@@ -2,7 +2,7 @@ import numpy as np
 from audio_utils.common.transforms import NonOverlappingRandomCrop, RandomCrop
 from audio_utils.common.base_packed_dataset import BasePackedDataset
 from audio_utils.common.utilities import load_audio, _collate_fn_multilabel, _collate_fn_multiclass, _collate_fn_contrastive
-from audio_utils.common.utilities import ConstrastiveCroppingType, Features
+from audio_utils.common.utilities import ConstrastiveCroppingType, Features, RecordFormat
 
 
 class PackedDataset(BasePackedDataset):
@@ -15,11 +15,14 @@ class PackedDataset(BasePackedDataset):
             dur = record['duration']
         else:
             dur = None
-        preprocessed_audio = load_audio(record['audio'],
-                                        self.audio_config.sr, self.audio_config.min_duration,
-                                        read_cropped=self.audio_config.cropped_read,
-                                        frames_to_read=self.audio_config.num_frames,
-                                        audio_size=dur)
+
+        preprocessed_audio = self.audio_loader_helper(
+            record['audio'],
+            self.audio_config.sr, self.audio_config.min_duration,
+            read_cropped=self.audio_config.cropped_read,
+            frames_to_read=self.audio_config.num_frames,
+            audio_size=dur
+        )
         if preprocessed_audio is None:
             return None, None
         real, _ = self.__get_waveform__(preprocessed_audio)
@@ -92,26 +95,33 @@ class PackedContrastiveDataset(BasePackedDataset):
         if (self.random_cropping_strategy == ConstrastiveCroppingType.PLAIN) and self.audio_config.cropped_read:
             # if cropped read is being done
             # just read twice from the buffer
-            preprocessed_audio_i = load_audio(record['audio'],
-                                              self.audio_config.sr, self.audio_config.min_duration,
-                                              read_cropped=self.audio_config.cropped_read,
-                                              frames_to_read=self.audio_config.num_frames,
-                                              audio_size=dur)
-            preprocessed_audio_j = load_audio(record['audio'],
-                                              self.audio_config.sr, self.audio_config.min_duration,
-                                              read_cropped=self.audio_config.cropped_read,
-                                              frames_to_read=self.audio_config.num_frames,
-                                              audio_size=dur)
+
+            preprocessed_audio_i = self.audio_loader_helper(
+                record['audio'],
+                self.audio_config.sr, self.audio_config.min_duration,
+                read_cropped=self.audio_config.cropped_read,
+                frames_to_read=self.audio_config.num_frames,
+                audio_size=dur
+            )
+            preprocessed_audio_j = self.audio_loader_helper(
+                record['audio'],
+                self.audio_config.sr, self.audio_config.min_duration,
+                read_cropped=self.audio_config.cropped_read,
+                frames_to_read=self.audio_config.num_frames,
+                audio_size=dur
+            )
             if preprocessed_audio_i is None or preprocessed_audio_j is None:
                 return None, None
             x_i, _ = self.__get_waveform__(preprocessed_audio_i)
             x_j, _ = self.__get_waveform__(preprocessed_audio_j)
         else:
-            preprocessed_audio = load_audio(record['audio'],
-                                            self.audio_config.sr, self.audio_config.min_duration,
-                                            read_cropped=self.audio_config.cropped_read,
-                                            frames_to_read=self.audio_config.num_frames,
-                                            audio_size=dur)
+            preprocessed_audio = self.audio_loader_helper(
+                record['audio'],
+                self.audio_config.sr, self.audio_config.min_duration,
+                read_cropped=self.audio_config.cropped_read,
+                frames_to_read=self.audio_config.num_frames,
+                audio_size=dur
+            )
             if preprocessed_audio is None:
                 return None, None
             audio, _ = self.__get_waveform__(preprocessed_audio)

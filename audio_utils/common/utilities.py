@@ -154,6 +154,38 @@ def load_audio(f, sr, min_duration: float = 5.,
     return x
 
 
+def read_np_audio(f, dtype="float32"):
+    if os.path.isfile(f):
+        return np.load(f).astype(dtype)
+    else:
+        return np.frombuffer(f, dtype=dtype)
+
+
+def load_numpy_buffer(f, sr, min_duration: float = 5.,
+                      read_cropped=False, frames_to_read=-1, audio_size=None,
+                      dtype="float32"):
+    # sr = record['sr']
+    if min_duration is not None:
+        min_samples = int(sr * min_duration)
+    else:
+        min_samples = None
+    try:
+        x = read_np_audio(f, dtype)
+    except RuntimeError as ex:
+        print("Catastrophic read failure. {}".format(ex))
+        return None
+    if read_cropped:
+        assert frames_to_read != -1
+        if not (frames_to_read >= audio_size):
+            start_idx = random.randint(0, audio_size - frames_to_read - 1)
+            x = x[start_idx:start_idx + frames_to_read]
+    if min_samples is not None:
+        if len(x) < min_samples:
+            tile_size = (min_samples // x.shape[0]) + 1
+            x = np.tile(x, tile_size)[:min_samples]
+    return x
+
+
 @enum.unique
 class Features(enum.Enum):
     """Look up for similarity measure in contrastive model."""
@@ -187,3 +219,13 @@ class ConstrastiveCroppingType(enum.Enum):
     NO_OVERLAP = "no_overlap"
 
 
+@enum.unique
+class RecordFormat(enum.Enum):
+    """
+    format in which audio is saved in records
+
+    NUMPY: the audio in the records is a numpy array stored as bytes
+    ENCODED: the audio in the records is a full audio file of .wav/.flac stored as bytes
+    """
+    NUMPY = "numpy"
+    ENCODED = "encoded"
